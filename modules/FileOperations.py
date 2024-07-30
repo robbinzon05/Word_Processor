@@ -1,38 +1,48 @@
-from docx import Document
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from PyQt5.QtWidgets import QTextEdit
+from PyQt5.QtWidgets import QFileDialog, QMessageBox
+import OpenAndSaveFunctions as fileOps
 
 
-def open_txt(file_path, text_edit: QTextEdit):
-    with open(file_path, 'r', encoding='utf-8') as f:
-        data = f.read()
-        text_edit.setText(data)
+class FileOperations:
+    def __init__(self, text_edit):
+        self.text_edit = text_edit
 
+    def new_file(self):
+        if self.text_edit.toPlainText():
+            reply = QMessageBox.question(
+                None, 'Message',
+                "There is unsaved text. Do you want to save it?",
+                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+                QMessageBox.Cancel
+            )
+            if reply == QMessageBox.Yes:
+                self.save_file()
+                self.text_edit.clear()
+            elif reply == QMessageBox.No:
+                self.text_edit.clear()
+            else:
+                return
+        else:
+            self.text_edit.clear()
 
-def open_docx(file_path, text_edit: QTextEdit):
-    doc = Document(file_path)
-    full_text = [para.text for para in doc.paragraphs]
-    text_edit.setText('\n'.join(full_text))
+    def open_file(self):
+        file, _ = QFileDialog.getOpenFileName(None, "Open File", "",
+                                              "Text Files (*.txt);;Word Files (*.docx)")
+        if file:
+            if file.endswith('.txt'):
+                fileOps.open_txt(file, self.text_edit)
+            elif file.endswith('.docx'):
+                fileOps.open_docx(file, self.text_edit)
 
-
-def save_txt(file_path, text_edit: QTextEdit):
-    with open(file_path, 'w', encoding='utf-8') as f:
-        f.write(text_edit.toPlainText())
-
-
-def save_docx(file_path, text_edit: QTextEdit):
-    doc = Document()
-    doc.add_paragraph(text_edit.toPlainText())
-    doc.save(file_path)
-
-
-def save_pdf(file_path, text_edit: QTextEdit):
-    c = canvas.Canvas(file_path, pagesize=letter)
-    text = text_edit.toPlainText()
-    text_object = c.beginText(40, 750)
-    for line in text.split('\n'):
-        text_object.textLine(line)
-    c.drawText(text_object)
-    c.showPage()
-    c.save()
+    def save_file(self):
+        file, _ = QFileDialog.getSaveFileName(None, "Save File", "",
+                                              "Text Files (*.txt);;Word Files (*.docx);;PDF Files (*.pdf)")
+        if file:
+            if file.endswith(".txt"):
+                fileOps.save_txt(file, self.text_edit)
+            elif file.endswith(".docx"):
+                fileOps.save_docx(file, self.text_edit)
+            elif file.endswith(".pdf"):
+                fileOps.save_pdf(file, self.text_edit)
+            else:
+                file += ".txt"
+                fileOps.save_txt(file, self.text_edit)

@@ -1,63 +1,39 @@
-import FileOperations as fileOps
-from PyQt5.QtWidgets import QFileDialog, QMessageBox
+from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import QShortcut
+from PyQt5.QtGui import QKeySequence
 from WordProcessorDesign import Ui_MainWindow
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QFileDialog, QMessageBox
+from FileOperations import FileOperations
+from EditOperations import EditOperations
 
 
 class ProcessorWindow(QtWidgets.QMainWindow, Ui_MainWindow):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super(ProcessorWindow, self).__init__(parent)
         self.setupUi(self)
-        self.show()
 
-        self.actionNew.triggered.connect(self.newFile)
-        self.newFileBut.clicked.connect(self.newFile)
+        self.file_ops = FileOperations(self.textEdit)
+        self.edit_ops = EditOperations(self.textEdit)
 
-        self.actionOpen.triggered.connect(self.openFile)
-        self.openFileBut.clicked.connect(self.openFile)
+        # FILE OPERATIONS
+        self.actionNew.triggered.connect(self.file_ops.new_file)
+        self.newFileBut.clicked.connect(self.file_ops.new_file)
 
-        self.actionSave.triggered.connect(self.saveFile)
-        self.saveBut.clicked.connect(self.saveFile)
+        self.actionOpen.triggered.connect(self.file_ops.open_file)
+        self.openFileBut.clicked.connect(self.file_ops.open_file)
 
-    def newFile(self):
-        if self.textEdit.toPlainText():
-            reply = QMessageBox.question(
-                self, 'Message',
-                "There is unsaved text. Do you want to save it?",
-                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
-                QMessageBox.Cancel
-            )
-            if reply == QMessageBox.Yes:
-                self.saveFile()
-                self.textEdit.clear()
-            elif reply == QMessageBox.No:
-                self.textEdit.clear()
-            else:
-                return
-        else:
-            self.textEdit.clear()
+        self.actionSave.triggered.connect(self.file_ops.save_file)
+        self.saveBut.clicked.connect(self.file_ops.save_file)
 
-    def openFile(self):
-        file, _ = QFileDialog.getOpenFileName(self, "Open File", "",
-                                              "Text Files (*.txt);;Word Files (*.docx)")
-        if file:
-            if file.endswith('.txt'):
-                fileOps.open_txt(file, self.textEdit)
-            elif file.endswith('.docx'):
-                fileOps.open_docx(file, self.textEdit)
+        QShortcut(QKeySequence("Ctrl+N"), self, self.file_ops.new_file)
+        QShortcut(QKeySequence("Ctrl+O"), self, self.file_ops.open_file)
+        QShortcut(QKeySequence("Ctrl+S"), self, self.file_ops.save_file)
 
-    def saveFile(self):
-        file, _ = QFileDialog.getSaveFileName(self, "Save File", "",
-                                              "Text Files (*.txt);;Word Files (*.docx);;PDF "
-                                              "Files (*.pdf)")
-        if file:
-            if file.endswith(".txt"):
-                fileOps.save_txt(file, self.textEdit)
-            elif file.endswith(".docx"):
-                fileOps.save_docx(file, self.textEdit)
-            elif file.endswith(".pdf"):
-                fileOps.save_pdf(file, self.textEdit)
-            else:
-                file += ".txt"
-                fileOps.save_txt(file, self.textEdit)
+        # EDIT OPERATIONS
+        self.actionCopy.triggered.connect(self.edit_ops.copy)
+
+        self.actionPaste.triggered.connect(self.edit_ops.paste)
+        self.actionCut.triggered.connect(self.edit_ops.cut)
+
+        QShortcut(QKeySequence("Ctrl+C"), self, self.edit_ops.copy)
+        QShortcut(QKeySequence("Ctrl+V"), self, self.edit_ops.paste)
+        QShortcut(QKeySequence("Ctrl+X"), self, self.edit_ops.cut)
