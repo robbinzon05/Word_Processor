@@ -1,10 +1,7 @@
-from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QTextCursor
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from docx import Document
 from docx.shared import Pt
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
 from PyQt5.QtWidgets import QTextEdit
 
 
