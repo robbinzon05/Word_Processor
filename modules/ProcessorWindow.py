@@ -5,6 +5,7 @@ from WordProcessorDesign import Ui_MainWindow
 from FileOperations import FileOperations
 from EditOperations import EditOperations
 from FormatOpeartions import FormatOperations
+from InsertOperations import InsertOperations
 
 
 class ProcessorWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -15,6 +16,7 @@ class ProcessorWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.file_ops = FileOperations(self.textEdit)
         self.edit_ops = EditOperations(self.textEdit)
         self.format_ops = FormatOperations(self.textEdit, self.spinBox)
+        self.insert_ops = InsertOperations(self.textEdit)
 
         # FILE OPERATIONS
         self.actionNew.triggered.connect(self.file_ops.new_file)
@@ -39,6 +41,8 @@ class ProcessorWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionSize_2.triggered.connect(self.format_ops.select_size)
         self.actionColor_2.triggered.connect(self.format_ops.select_color)
 
+        # INSERT OPERATIONS
+        self.actionImage.triggered.connect(self.insert_ops.insert_image)
         # TOOLBAR BUTTONS
         self.newFileBut.clicked.connect(self.file_ops.new_file)
         self.openFileBut.clicked.connect(self.file_ops.open_file)
@@ -46,13 +50,6 @@ class ProcessorWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.fontBut.clicked.connect(self.format_ops.select_font)
         self.textSizeBut.clicked.connect(self.format_ops.select_size)
         self.colorBut.clicked.connect(self.format_ops.select_color)
+        self.imgInsertBut.clicked.connect(self.insert_ops.insert_image)
         self.redoBut.clicked.connect(self.textEdit.redo)
         self.undoBut.clicked.connect(self.textEdit.undo)
-
-
-
-
-
-
-
-

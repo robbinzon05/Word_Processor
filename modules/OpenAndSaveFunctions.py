@@ -1,8 +1,10 @@
+import base64
+import os
 from PyQt5.QtGui import QTextCursor
 from PyQt5.QtWebEngineWidgets import QWebEngineView
+from PyQt5.QtWidgets import QTextEdit
 from docx import Document
 from docx.shared import Pt
-from PyQt5.QtWidgets import QTextEdit
 
 
 def open_txt(file_path, text_edit: QTextEdit):
@@ -12,29 +14,38 @@ def open_txt(file_path, text_edit: QTextEdit):
 
 
 def open_docx(file_path, text_edit: QTextEdit):
+    temp_dir = os.path.join(os.path.dirname(file_path), "temp_images")
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
+
     doc = Document(file_path)
-    html_content = []
+    html_content = ""
+
     for para in doc.paragraphs:
-        paragraph_html = "<p>"
         for run in para.runs:
-            run_html = run.text
-            if run.bold:
-                run_html = f"<b>{run_html}</b>"
-            if run.italic:
-                run_html = f"<i>{run_html}</i>"
-            if run.underline:
-                run_html = f"<u>{run_html}</u>"
-            if run.font.size:
-                run_html = f'<span style="font-size: {run.font.size.pt}pt;">{run_html}</span>'
-            paragraph_html += run_html
-        paragraph_html += "</p>"
-        html_content.append(paragraph_html)
-    text_edit.setHtml(''.join(html_content))
+            if run.text:
+                html_content += run.text.replace('\n', '<br>') + ' '
+            for inline_shape in run.element.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}drawing'):
+                for blip in inline_shape.findall('.//{http://schemas.openxmlformats.org/drawingml/2006/main}blip'):
+                    rID = blip.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed')
+                    image_part = doc.part.related_parts[rID]
+                    image_data = image_part.blob
+                    encoded_image = base64.b64encode(image_data).decode("utf-8")
+                    img_tag = f'<img src="data:image/png;base64,{encoded_image}"/>'
+                    html_content += img_tag + ' '
+        html_content += '<br>'
+
+    text_edit.setHtml(html_content)
 
 
 def save_txt(file_path, text_edit: QTextEdit):
     with open(file_path, 'w', encoding='utf-8') as f:
         f.write(text_edit.toPlainText())
+
+
+def add_image(paragraph, image_path):
+    run = paragraph.add_run()
+    run.add_picture(image_path)
 
 
 def save_docx(file_path, text_edit: QTextEdit):
@@ -59,8 +70,13 @@ def save_docx(file_path, text_edit: QTextEdit):
         while iter != block.end():
             fragment = iter.fragment()
             if fragment.isValid():
-                run = paragraph.add_run(fragment.text())
-                apply_char_format(run, fragment.charFormat())
+                if fragment.charFormat().isImageFormat():
+                    image_format = fragment.charFormat().toImageFormat()
+                    image_path = image_format.name()
+                    add_image(paragraph, image_path)
+                else:
+                    run = paragraph.add_run(fragment.text())
+                    apply_char_format(run, fragment.charFormat())
             iter += 1
         block = block.next()
 
