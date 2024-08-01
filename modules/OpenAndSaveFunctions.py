@@ -4,7 +4,7 @@ from PyQt5.QtGui import QTextCursor
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QTextEdit
 from docx import Document
-from docx.shared import Pt
+from docx.shared import Pt, RGBColor
 
 
 def open_txt(file_path, text_edit: QTextEdit):
@@ -21,11 +21,28 @@ def open_docx(file_path, text_edit: QTextEdit):
     doc = Document(file_path)
     html_content = ""
 
+    def add_styles(run):
+        styles = ""
+        if run.bold:
+            styles += "font-weight:bold;"
+        if run.italic:
+            styles += "font-style:italic;"
+        if run.underline:
+            styles += "text-decoration:underline;"
+        if run.font.size:
+            styles += f"font-size:{run.font.size.pt}pt;"
+        if run.font.color and run.font.color.rgb:
+            red, green, blue = run.font.color.rgb
+            styles += f"color:rgb({red},{green},{blue});"
+        return styles
+
     for para in doc.paragraphs:
         for run in para.runs:
             if run.text:
-                html_content += run.text.replace('\n', '<br>') + ' '
-            for inline_shape in run.element.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}drawing'):
+                styles = add_styles(run)
+                html_content += f'<span style="{styles}">{run.text.replace(" ", "&nbsp;")}</span> '
+            for inline_shape in run.element.findall(
+                    './/{http://schemas.openxmlformats.org/wordprocessingml/2006/main}drawing'):
                 for blip in inline_shape.findall('.//{http://schemas.openxmlformats.org/drawingml/2006/main}blip'):
                     rID = blip.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed')
                     image_part = doc.part.related_parts[rID]
@@ -48,7 +65,7 @@ def add_image(paragraph, image_path):
     run.add_picture(image_path)
 
 
-def save_docx(file_path, text_edit: QTextEdit):
+def save_docx(file_path, text_edit):
     doc = Document()
     cursor = QTextCursor(text_edit.document())
 
@@ -61,6 +78,12 @@ def save_docx(file_path, text_edit: QTextEdit):
             run.underline = True
         if char_format.fontPointSize() > 0:
             run.font.size = Pt(char_format.fontPointSize())
+        if char_format.foreground().color().isValid():
+            qt_color = char_format.foreground().color()
+            red = qt_color.red()
+            green = qt_color.green()
+            blue = qt_color.blue()
+            run.font.color.rgb = RGBColor(red, green, blue)
 
     block = cursor.block()
 
@@ -85,6 +108,34 @@ def save_docx(file_path, text_edit: QTextEdit):
 
 def save_pdf(file_path, text_edit: QTextEdit):
     html_content = text_edit.toHtml()
+
+    def replace_images_with_base64(html):
+        import re
+        import os
+
+        def base64_image(match):
+            image_path = match.group(1)
+            if image_path.startswith(('http:', 'https:')):
+                return match.group(0)
+            with open(image_path, 'rb') as image_file:
+                image_data = image_file.read()
+                encoded_image = base64.b64encode(image_data).decode("utf-8")
+                mime_type = get_mime_type(image_path)
+                return f'src="data:{mime_type};base64,{encoded_image}"'
+
+        def get_mime_type(image_path):
+            ext = os.path.splitext(image_path)[1].lower()
+            return {
+                '.png': 'image/png',
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.gif': 'image/gif'
+            }.get(ext, 'application/octet-stream')
+
+        return re.sub(r'src=["\']([^"\']+)["\']', base64_image, html)
+
+    html_content = replace_images_with_base64(html_content)
+
     web_view = QWebEngineView()
     web_view.setHtml(html_content)
 
