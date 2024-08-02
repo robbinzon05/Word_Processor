@@ -15,7 +15,7 @@ class ProcessorWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.file_ops = FileOperations(self.textEdit)
         self.edit_ops = EditOperations(self.textEdit)
-        self.format_ops = FormatOperations(self.textEdit, self.spinBox)
+        self.format_ops = FormatOperations(self, self.textEdit, self.spinBox)
         self.insert_ops = InsertOperations(self.textEdit)
 
         # FILE OPERATIONS
@@ -51,6 +51,10 @@ class ProcessorWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # INSERT OPERATIONS
         self.actionImage.triggered.connect(self.insert_ops.insert_image)
 
+        # STYLES OPERATIONS
+        self.actionNew_Style.triggered.connect(self.format_ops.show_new_style_dialog)
+        self.actionStyles.triggered.connect(self.format_ops.show_styles_dialog)
+
         # TOOLBAR BUTTONS
         self.newFileBut.clicked.connect(self.file_ops.new_file)
         self.openFileBut.clicked.connect(self.file_ops.open_file)
@@ -71,5 +75,3 @@ class ProcessorWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.alignCenterBut.clicked.connect(self.format_ops.align_center)
         self.alignRightBut.clicked.connect(self.format_ops.align_right)
         self.justifyBut.clicked.connect(self.format_ops.justify)
-
-

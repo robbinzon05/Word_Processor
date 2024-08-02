@@ -1,8 +1,10 @@
 from PyQt5.QtWidgets import QColorDialog, QFontDialog, QTextEdit, QSpinBox, QInputDialog, QDialog, QVBoxLayout, QLabel, \
-    QComboBox
-from PyQt5.QtGui import QTextCharFormat, QFont, QTextBlockFormat
+    QComboBox, QMessageBox
+from PyQt5.QtGui import QTextCharFormat, QFont, QTextBlockFormat, QColor
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
+from StylesOperations import NewStyleDialog, StyleSelectionDialog
+from styles_database import DatabaseManager
 
 
 class LineSpacingDialog(QDialog):
@@ -32,8 +34,10 @@ class LineSpacingDialog(QDialog):
 
 
 class FormatOperations:
-    def __init__(self, text_edit: QTextEdit, size_spin_box: QSpinBox):
+    def __init__(self, parent, text_edit: QTextEdit, size_spin_box: QSpinBox):
+        self.parent = parent
         self.text_edit = text_edit
+        self.db = DatabaseManager()
         self.size_spin_box = size_spin_box
         self.size_spin_box.valueChanged.connect(self.change_size)
 
@@ -184,3 +188,51 @@ class FormatOperations:
         block_format.setAlignment(alignment)
         cursor.setBlockFormat(block_format)
         self.text_edit.setTextCursor(cursor)
+
+    def show_new_style_dialog(self):
+        dialog = NewStyleDialog()
+        if dialog.exec_():
+            style = dialog.get_style()
+            if style['name'] and (style['font'] or style['color']):
+                font_face = style['font'].family() if style['font'] else None
+                font_size = style['font'].pointSize() if style['font'] else None
+                font_weight = style['font'].weight() if style['font'] else None
+                font_italic = style['font'].italic() if style['font'] else None
+                color = style['color'].name() if style['color'] else None
+                self.db.add_style(style['name'], font_face, font_size, font_weight, font_italic, color)
+            else:
+                QMessageBox.warning(self.parent, "Error!",
+                                    "Please, write name and choose at least one style element.")
+
+    def show_styles_dialog(self):
+        styles = self.db.get_styles()
+        if styles:
+            dialog = StyleSelectionDialog(self.text_edit.parentWidget())
+            style_list = [{'id': s[0], 'name': s[1], 'font_face': s[2], 'font_size': s[3], 'font_weight': s[4],
+                           'font_italic': s[5], 'color': s[6]} for s in styles]
+            dialog.populate_styles(style_list)
+            if dialog.exec_():
+                selected_style_index = dialog.get_selected_style()
+                self.apply_style(style_list[selected_style_index])
+        else:
+            QMessageBox.warning(self.parent, "Error!", "At first make at least one style.")
+
+    def apply_style(self, style):
+        format = QTextCharFormat()
+        font = QFont()
+        if style['font_face']:
+            font.setFamily(style['font_face'])
+        if style['font_size']:
+            font.setPointSize(style['font_size'])
+        if style['font_weight']:
+            font.setWeight(style['font_weight'])
+        if style['font_italic']:
+            font.setItalic(style['font_italic'])
+        if style['color']:
+            format.setForeground(QColor(style['color']))
+
+        format.setFont(font)
+
+        cursor = self.text_edit.textCursor()
+        cursor.mergeCharFormat(format)
+        self.text_edit.mergeCurrentCharFormat(format)
