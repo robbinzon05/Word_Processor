@@ -1,5 +1,34 @@
-from PyQt5.QtWidgets import QColorDialog, QFontDialog, QTextEdit, QSpinBox, QInputDialog
-from PyQt5.QtGui import QTextCharFormat
+from PyQt5.QtWidgets import QColorDialog, QFontDialog, QTextEdit, QSpinBox, QInputDialog, QDialog, QVBoxLayout, QLabel, \
+    QComboBox
+from PyQt5.QtGui import QTextCharFormat, QFont, QTextBlockFormat
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import Qt
+
+
+class LineSpacingDialog(QDialog):
+    def __init__(self, parent=None):
+        super(LineSpacingDialog, self).__init__(parent)
+        self.setWindowTitle("Select interval")
+
+        self.layout = QVBoxLayout()
+
+        self.label = QLabel("Select line spacing:")
+        self.layout.addWidget(self.label)
+
+        self.comboBox = QComboBox()
+        self.comboBox.addItems(["1", "1,5", "2"])
+        self.layout.addWidget(self.comboBox)
+
+        self.buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        self.layout.addWidget(self.buttonBox)
+
+        self.setLayout(self.layout)
+
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+
+    def get_selected_spacing(self):
+        return self.comboBox.currentText()
 
 
 class FormatOperations:
@@ -36,7 +65,7 @@ class FormatOperations:
         self.change_format({'size': size})
 
     def select_size(self):
-        size, ok = QInputDialog.getInt(self.text_edit, "Выбрать размер", "Размер текста:", self.size_spin_box.value(),
+        size, ok = QInputDialog.getInt(self.text_edit, "Select size", "Size of text:", self.size_spin_box.value(),
                                        1, 100)
         if ok:
             self.size_spin_box.setValue(size)
@@ -65,3 +94,93 @@ class FormatOperations:
                 format.setFontPointSize(attrs['size'])
 
             self.text_edit.setCurrentCharFormat(format)
+
+    def toggle_format(self, attribute):
+        cursor = self.text_edit.textCursor()
+        if cursor.hasSelection():
+            current_format = cursor.charFormat()
+            if attribute == QFont.Bold:
+                current_format.setFontWeight(QFont.Bold if current_format.fontWeight() != QFont.Bold else QFont.Normal)
+            elif attribute == QFont.StyleItalic:
+                current_format.setFontItalic(not current_format.fontItalic())
+            elif attribute == "Underline":
+                current_format.setFontUnderline(not current_format.fontUnderline())
+            cursor.setCharFormat(current_format)
+        else:
+            current_format = self.text_edit.currentCharFormat()
+            if attribute == QFont.Bold:
+                current_format.setFontWeight(QFont.Bold if current_format.fontWeight() != QFont.Bold else QFont.Normal)
+            elif attribute == QFont.StyleItalic:
+                current_format.setFontItalic(not current_format.fontItalic())
+            elif attribute == "Underline":
+                current_format.setFontUnderline(not current_format.fontUnderline())
+            self.text_edit.setCurrentCharFormat(current_format)
+
+    def toggle_bold(self):
+        self.toggle_format(QFont.Bold)
+
+    def toggle_italic(self):
+        self.toggle_format(QFont.StyleItalic)
+
+    def toggle_underline(self):
+        self.toggle_format("Underline")
+
+    def increase_indent(self):
+        cursor = self.text_edit.textCursor()
+        cursor.beginEditBlock()
+
+        block_format = cursor.blockFormat()
+        block_format.setIndent(block_format.indent() + 1)
+        cursor.setBlockFormat(block_format)
+
+        cursor.endEditBlock()
+
+    def decrease_indent(self):
+        cursor = self.text_edit.textCursor()
+        cursor.beginEditBlock()
+
+        block_format = cursor.blockFormat()
+        block_format.setIndent(max(block_format.indent() - 1, 0))
+        cursor.setBlockFormat(block_format)
+
+        cursor.endEditBlock()
+
+    def show_line_spacing_dialog(self):
+        dialog = LineSpacingDialog()
+        if dialog.exec_():
+            selected_spacing = dialog.get_selected_spacing()
+            self.set_line_spacing(selected_spacing)
+
+    def set_line_spacing(self, spacing):
+        cursor = self.text_edit.textCursor()
+        cursor.beginEditBlock()
+
+        block_format = cursor.blockFormat()
+        if spacing == "1":
+            block_format.setLineHeight(100, QTextBlockFormat.ProportionalHeight)
+        elif spacing == "1,5":
+            block_format.setLineHeight(150, QTextBlockFormat.ProportionalHeight)
+        elif spacing == "2":
+            block_format.setLineHeight(200, QTextBlockFormat.ProportionalHeight)
+
+        cursor.setBlockFormat(block_format)
+        cursor.endEditBlock()
+
+    def align_left(self):
+        self.set_alignment(Qt.AlignLeft)
+
+    def align_center(self):
+        self.set_alignment(Qt.AlignCenter)
+
+    def align_right(self):
+        self.set_alignment(Qt.AlignRight)
+
+    def justify(self):
+        self.set_alignment(Qt.AlignJustify)
+
+    def set_alignment(self, alignment):
+        cursor = self.text_edit.textCursor()
+        block_format = cursor.blockFormat()
+        block_format.setAlignment(alignment)
+        cursor.setBlockFormat(block_format)
+        self.text_edit.setTextCursor(cursor)

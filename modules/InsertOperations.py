@@ -9,7 +9,7 @@ class InsertOperations:
     def insert_image(self):
         options = QFileDialog.Options()
         file_path, _ = QFileDialog.getOpenFileName(self.text_edit, "Choose image", "",
-                                                   "Image Files (*.png *.jpg *.bmp *.gif);;All Files (*)",
+                                                   "Image Files (*.png *.jpg)",
                                                    options=options)
         if file_path:
             cursor = self.text_edit.textCursor()

@@ -26,23 +26,13 @@ class FileOperations:
 
     def open_file(self):
         file, _ = QFileDialog.getOpenFileName(None, "Open File", "",
-                                              "Text Files (*.txt);;Word Files (*.docx)")
+                                              "Word Files (*.docx)")
         if file:
-            if file.endswith('.txt'):
-                fileOps.open_txt(file, self.text_edit)
-            elif file.endswith('.docx'):
-                fileOps.open_docx(file, self.text_edit)
+            fileOps.open_docx(file, self.text_edit)
 
     def save_file(self):
         file, _ = QFileDialog.getSaveFileName(None, "Save File", "",
-                                              "Text Files (*.txt);;Word Files (*.docx);;PDF Files (*.pdf)")
+                                              "Word Files (*.docx)")
         if file:
-            if file.endswith(".txt"):
-                fileOps.save_txt(file, self.text_edit)
-            elif file.endswith(".docx"):
-                fileOps.save_docx(file, self.text_edit)
-            elif file.endswith(".pdf"):
-                fileOps.save_pdf(file, self.text_edit)
-            else:
-                file += ".txt"
-                fileOps.save_txt(file, self.text_edit)
+            fileOps.save_docx(file, self.text_edit)
+
