@@ -1,6 +1,8 @@
 import base64
 import os
-from PyQt5.QtGui import QTextCursor
+from PyQt5.QtCore import Qt
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT, WD_LINE_SPACING
+from PyQt5.QtGui import QTextCursor, QTextBlockFormat
 from PyQt5.QtWidgets import QTextEdit
 from docx import Document
 from docx.shared import Pt, RGBColor
@@ -73,10 +75,46 @@ def save_docx(file_path, text_edit):
             blue = qt_color.blue()
             run.font.color.rgb = RGBColor(red, green, blue)
 
+    def apply_block_format(paragraph, block_format):
+        # Применение выравнивания
+        alignment = block_format.alignment()
+        if alignment == Qt.AlignLeft:
+            paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+        elif alignment == Qt.AlignCenter:
+            paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        elif alignment == Qt.AlignRight:
+            paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.RIGHT
+        elif alignment == Qt.AlignJustify:
+            paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY
+
+        # Применение межстрочных интервалов
+        line_height = block_format.lineHeight()
+        if block_format.lineHeightType() == QTextBlockFormat.ProportionalHeight:
+            paragraph.paragraph_format.line_spacing_rule = WD_LINE_SPACING.SINGLE
+            paragraph.paragraph_format.line_spacing = line_height / 100
+        elif block_format.lineHeightType() == QTextBlockFormat.FixedHeight:
+            paragraph.paragraph_format.line_spacing_rule = WD_LINE_SPACING.EXACTLY
+            paragraph.paragraph_format.line_spacing = Pt(line_height)
+
+        # Применение отступов
+        if block_format.leftMargin() > 0:
+            paragraph.paragraph_format.left_indent = Pt(block_format.leftMargin() / 10)
+        if block_format.rightMargin() > 0:
+            paragraph.paragraph_format.right_indent = Pt(block_format.rightMargin() / 10)
+        if block_format.topMargin() > 0:
+            paragraph.paragraph_format.space_before = Pt(block_format.topMargin() / 10)
+        if block_format.bottomMargin() > 0:
+            paragraph.paragraph_format.space_after = Pt(block_format.bottomMargin() / 10)
+
+        # Применение отступа
+        if block_format.indent() > 0:
+            paragraph.paragraph_format.first_line_indent = Pt(block_format.indent() * 15)
+
     block = cursor.block()
 
     while block.isValid():
         paragraph = doc.add_paragraph()
+        apply_block_format(paragraph, block.blockFormat())
         iter = block.begin()
         while iter != block.end():
             fragment = iter.fragment()
@@ -90,5 +128,4 @@ def save_docx(file_path, text_edit):
                     apply_char_format(run, fragment.charFormat())
             iter += 1
         block = block.next()
-
     doc.save(file_path)
