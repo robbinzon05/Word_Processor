@@ -1,5 +1,5 @@
-from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QShortcut
+from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtWidgets import QShortcut, QInputDialog
 from PyQt5.QtGui import QKeySequence
 from WordProcessorDesign import Ui_MainWindow
 from FileOperations import FileOperations
@@ -50,6 +50,7 @@ class ProcessorWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # INSERT OPERATIONS
         self.actionImage.triggered.connect(self.insert_ops.insert_image)
+        self.actionLink_3.triggered.connect(self.insert_ops.insert_link)
 
         # STYLES OPERATIONS
         self.actionNew_Style.triggered.connect(self.format_ops.show_new_style_dialog)
@@ -75,3 +76,5 @@ class ProcessorWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.alignCenterBut.clicked.connect(self.format_ops.align_center)
         self.alignRightBut.clicked.connect(self.format_ops.align_right)
         self.justifyBut.clicked.connect(self.format_ops.justify)
+        self.linkBut.clicked.connect(self.insert_ops.insert_link)
+        self.textEdit.selectionChanged.connect(self.insert_ops.update_open_link)
